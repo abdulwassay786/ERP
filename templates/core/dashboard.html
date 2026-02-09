@@ -1,0 +1,361 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - ERP System{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Row 1: Financial Overview, Bank Accounts, Inventory Summary -->
+<div class="dashboard-row">
+    <!-- Financial Overview -->
+    <div class="card financial-overview-card">
+        <div class="card-header-clean">
+            <h3>FINANCIAL OVERVIEW</h3>
+            <span class="text-muted" style="font-size: 0.7rem;">This Month</span>
+        </div>
+        <div class="financial-metrics">
+            <div class="metric-item">
+                <div class="metric-label">Total Revenue</div>
+                <div class="metric-value text-green">Rs {{ total_revenue|floatformat:2 }}</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-label">Outstanding</div>
+                <div class="metric-value text-orange">Rs {{ outstanding_amount|floatformat:2 }}</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-label">Expenses</div>
+                <div class="metric-value text-red">Rs {{ total_expenses|floatformat:2 }}</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-label">Net Profit</div>
+                <div class="metric-value {% if net_profit >= 0 %}text-green{% else %}text-red{% endif %}">Rs
+                    {{net_profit|floatformat:2 }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bank Accounts -->
+    <div class="card bank-accounts-card">
+        <div class="card-header-clean">
+            <h3>BANK ACCOUNTS</h3>
+            <span class="header-link"><a href="{% url 'banking:account_create' %}"
+                    style="text-decoration: none; color: inherit;">+ Add</a></span>
+        </div>
+        <div class="bank-total">
+            <div class="bank-total-label">Total Balance</div>
+            <div class="bank-total-value">Rs {{ total_bank_balance|floatformat:2 }}</div>
+        </div>
+        <div class="bank-accounts-list-compact">
+            {% for account in bank_accounts %}
+            <div class="bank-account-compact">
+                <span class="account-name-compact">{{ account.account_name }}</span>
+                <span class="account-balance-compact">Rs {{ account.balance|floatformat:2 }}</span>
+            </div>
+            {% empty %}
+            <div class="text-center text-muted py-2" style="font-size: 0.75rem;">No accounts</div>
+            {% endfor %}
+        </div>
+        <div class="card-footer-links mt-auto">
+            <a href="{% url 'banking:account_list' %}" class="link-blue" style="font-size: 0.75rem;">View All →</a>
+        </div>
+    </div>
+
+    <!-- Inventory Summary -->
+    <div class="card inventory-summary-card">
+        <div class="card-header-clean">
+            <h3>INVENTORY SUMMARY</h3>
+        </div>
+        <div class="inventory-summary-content">
+            <div class="inventory-row">
+                <div class="inventory-label">QUANTITY IN HAND</div>
+                <div class="inventory-value">{{ quantity_in_hand|default:0 }}</div>
+            </div>
+            <div class="inventory-row">
+                <div class="inventory-label">INVENTORY VALUE</div>
+                <div class="inventory-value">Rs {{ inventory_value|floatformat:2 }}</div>
+            </div>
+            <div class="inventory-row">
+                <div class="inventory-label">LOW STOCK ALERT</div>
+                <div class="inventory-value {% if low_stock_items > 0 %}text-red{% endif %}">{{ low_stock_items }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 2: Invoice Status, Product Details, Top Selling Items -->
+<div class="dashboard-row mt-3">
+    <!-- Invoice Status -->
+    <div class="card invoice-status-card">
+        <div class="card-header-clean">
+            <h3>INVOICE STATUS</h3>
+        </div>
+        <div class="invoice-status-content">
+            <div class="status-item">
+                <span class="status-label">Draft</span>
+                <span class="status-value">{{ draft_invoices_count }}</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Sent (Unpaid)</span>
+                <span class="status-value">{{ sent_invoices_count }}</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label text-red">Overdue</span>
+                <span class="status-value text-red">{{ overdue_invoices_count }}</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label text-muted" style="font-size: 0.7rem;">Overdue Amount</span>
+                <span class="status-value text-red">Rs {{ overdue_amount|floatformat:2 }}</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label text-green">Paid This Month</span>
+                <span class="status-value text-green">{{ paid_this_month_count }}</span>
+            </div>
+        </div>
+        <div class="card-footer-links mt-3 text-center border-top pt-2">
+            <a href="{% url 'payments:create' %}" class="btn btn-sm btn-primary w-100">
+                <i class="bi bi-credit-card-2-front"></i> Record Payment
+            </a>
+        </div>
+    </div>
+
+    <!-- Product Details -->
+    <div class="card product-details-card">
+        <div class="card-header-clean">
+            <h3>PRODUCT DETAILS</h3>
+        </div>
+        <div class="product-details-content">
+            <div class="product-list">
+                <div class="product-list-item">
+                    <span class="label text-red">Low Stock Items</span>
+                    <span class="value">{{ low_stock_items }}</span>
+                </div>
+                <div class="product-list-item">
+                    <span class="label">All Items</span>
+                    <span class="value">{{ all_items_count }}</span>
+                </div>
+                <div class="product-list-item">
+                    <span class="label text-orange">Out of Stock</span>
+                    <span class="value">{{ out_of_stock_items }}</span>
+                </div>
+            </div>
+            <div class="product-chart">
+                <div class="chart-label">Active Items</div>
+                <div class="chart-donut-container">
+                    <canvas id="activeItemsChart"></canvas>
+                    <div class="chart-center-text">{{ active_items_count }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Selling Items -->
+    <div class="card top-selling-card">
+        <div class="card-header-clean">
+            <h3>TOP SELLING ITEMS</h3>
+        </div>
+        <div class="top-selling-list">
+            {% for item in top_selling_items %}
+            <div class="selling-item">
+                <div class="item-icon">
+                    <span>📦</span>
+                </div>
+                <div class="item-details">
+                    <div class="item-name">{{ item.product__name }}</div>
+                </div>
+                <div class="item-stats text-center">
+                    <div class="item-qty">{{ item.total_qty }} pcs</div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center text-muted py-4">No sales data</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Row 3: Sales Trend Chart & Customer Insights -->
+<div class="dashboard-row mt-3">
+    <!-- Sales Trend -->
+    <div class="card sales-trend-card" style="flex: 2;">
+        <div class="card-header-clean">
+            <h3>SALES TREND</h3>
+            <span class="text-muted" style="font-size: 0.7rem;">Last 6 Months</span>
+        </div>
+        <div class="chart-container" style="height: 250px; padding: 1rem;">
+            <canvas id="salesTrendChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Customer Insights -->
+    <div class="card customer-insights-card">
+        <div class="card-header-clean">
+            <h3>CUSTOMER INSIGHTS</h3>
+        </div>
+        <div class="customer-metrics">
+            <div class="customer-metric-item">
+                <div class="customer-metric-label">Total Customers</div>
+                <div class="customer-metric-value">{{ total_customers }}</div>
+            </div>
+            <div class="customer-metric-item">
+                <div class="customer-metric-label">Active This Month</div>
+                <div class="customer-metric-value text-green">{{ active_customers }}</div>
+            </div>
+            {% if top_customer %}
+            <div class="customer-metric-item"
+                style="border-top: 1px solid #e5e7eb; padding-top: 0.75rem; margin-top: 0.75rem;">
+                <div class="customer-metric-label">Top Customer</div>
+                <div class="customer-metric-name">{{ top_customer.name }}</div>
+                <div class="customer-metric-revenue">Rs {{ top_customer.total_revenue|floatformat:2 }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Row 3.5: Ledger Overview -->
+<div class="dashboard-row mt-3">
+    <div class="card" style="flex: 1;">
+        <div class="card-header-clean">
+            <h3>LEDGER OVERVIEW</h3>
+        </div>
+        <div class="row p-3">
+            <div class="col-6 text-center border-end">
+                <div class="text-uppercase text-muted small fw-bold mb-1">Total Receivables</div>
+                <h3 class="text-success mb-0">Rs {{ total_receivables|floatformat:2 }}</h3>
+                <small class="text-muted">From Customers</small>
+            </div>
+            <div class="col-6 text-center">
+                <div class="text-uppercase text-muted small fw-bold mb-1">Total Payables</div>
+                <h3 class="text-danger mb-0">Rs {{ total_payables|floatformat:2 }}</h3>
+                <small class="text-muted">To Suppliers</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 4: Recent Activity -->
+<div class="dashboard-row mt-3">
+    <div class="card recent-activity-card" style="flex: 1;">
+        <div class="card-header-clean">
+            <h3>RECENT INVOICES</h3>
+        </div>
+        <div class="recent-list">
+            {% for invoice in recent_invoices %}
+            <div class="recent-item">
+                <div class="recent-item-info">
+                    <div class="recent-item-title">{{ invoice.customer.name }}</div>
+                    <div class="recent-item-subtitle">#{{ invoice.invoice_number }}</div>
+                </div>
+                <div class="recent-item-amount">
+                    <div class="recent-item-value">Rs {{ invoice.total_amount|floatformat:2 }}</div>
+                    <div class="recent-item-status status-{{ invoice.status }}">{{ invoice.status|title }}</div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center text-muted py-3">No recent invoices</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="card recent-activity-card" style="flex: 1;">
+        <div class="card-header-clean">
+            <h3>RECENT TRANSACTIONS</h3>
+        </div>
+        <div class="recent-list">
+            {% for transaction in recent_transactions %}
+            <div class="recent-item">
+                <div class="recent-item-info">
+                    <div class="recent-item-title">{{ transaction.description|truncatewords:5 }}</div>
+                    <div class="recent-item-subtitle">{{ transaction.transaction_date|date:"M d, Y" }}</div>
+                </div>
+                <div class="recent-item-amount">
+                    <div
+                        class="recent-item-value {% if transaction.transaction_type == 'withdrawal' %}text-red{% else %}text-green{% endif %}">
+                        {% if transaction.transaction_type == 'withdrawal' %}-{% else %}+{% endif %}Rs
+                        <transaction class="amount">{{ transaction.amount }}</transaction>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center text-muted py-3">No recent transactions</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+    // Active Items Donut Chart
+    const activeCtx = document.getElementById('activeItemsChart');
+    if (activeCtx) {
+        new Chart(activeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Active', 'Out of Stock'],
+                datasets: [{
+                    data: [{{ active_items_count }}, {{ out_of_stock_items }}],
+            backgroundColor: ['#2ECC71', '#ECEFF1'],
+            borderWidth: 0,
+            cutout: '70%'
+        }]
+            },
+    options: {
+        responsive: true,
+            maintainAspectRatio: false,
+                plugins: {
+            legend: { display: false },
+            tooltip: { enabled: false }
+        }
+    }
+        });
+    }
+
+    // Sales Trend Line Chart
+    const salesCtx = document.getElementById('salesTrendChart');
+    if (salesCtx) {
+        new Chart(salesCtx, {
+            type: 'line',
+            data: {
+                labels: {{ sales_trend_labels| safe }},
+    datasets: [{
+        label: 'Revenue',
+        data: {{ sales_trend_data| safe }},
+        borderColor: '#2ECC71',
+        backgroundColor: 'rgba(46, 204, 113, 0.1)',
+        tension: 0.4,
+        fill: true,
+        pointRadius: 4,
+        pointHoverRadius: 6
+                }]
+            },
+    options: {
+        responsive: true,
+            maintainAspectRatio: false,
+                plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return 'Rs ' + context.parsed.y.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                    ticks: {
+                    callback: function(value) {
+                        return 'Rs ' + value.toLocaleString();
+                    }
+                }
+            }
+        }
+    }
+        });
+    }
+</script>
+{% endblock %}

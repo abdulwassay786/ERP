@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2>
+            <i class="bi bi-file-text me-2"></i>{% block title %}Statement{% endblock %}
+        </h2>
+        <p class="text-muted mb-0">{% block subtitle %}View financial history{% endblock %}</p>
+    </div>
+    <div class="col-md-6 text-md-end">
+        <form class="d-flex justify-content-end align-items-center gap-2" method="get">
+            <input type="date" name="start_date" class="form-control" value="{{ start_date|date:'Y-m-d' }}">
+            <span class="text-muted">to</span>
+            <input type="date" name="end_date" class="form-control" value="{{ end_date|date:'Y-m-d' }}">
+            <button type="submit" class="btn btn-primary mb-1 mt-1">Filter</button>
+        </form>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h3 class="text-muted mb-1">{% block party_label %}Customer{% endblock %}</h3>
+                <h3 class="mb-0">{% block party_name %}Name{% endblock %}</h3>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <h5 class="text-muted mb-1">Current Balance</h5>
+                <h2
+                    class="mb-0 {% if current_balance > 0 %}text-success{% elif current_balance < 0 %}text-danger{% endif %}">
+                    {{ current_balance|default:"0.00" }}
+                </h2>
+                <small class="text-muted">Positive = They owe us / Negative = We owe them</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">Transaction History</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Reference</th>
+                    <th>Description</th>
+                    <th class="text-end">Debit (+)</th>
+                    <th class="text-end">Credit (-)</th>
+                    <th class="text-end">Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in statement %}
+                <tr>
+                    <td>{{ entry.date|date:"M d, Y" }}</td>
+                    <td>
+                        <span
+                            class="badge {% if entry.entry_type == 'Invoice' %}bg-primary{% elif entry.entry_type == 'Payment' %}bg-success{% else %}bg-secondary{% endif %}">
+                            {{ entry.entry_type }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if entry.entry_type == 'Invoice' and entry.reference %}
+                        <a href="{% url 'invoices:detail' entry.reference.id %}"
+                            class="font-monospace text-decoration-none">{{ entry.reference.invoice_number }}</a>
+                        {% else %}
+                        <span class="font-monospace">{{ entry.reference.invoice_number|default:"-" }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ entry.description }}</td>
+                    <td class="text-end {% if entry.debit %}fw-bold{% endif %}">
+                        {% if entry.debit %}{{ entry.debit }}{% else %}-{% endif %}
+                    </td>
+                    <td class="text-end {% if entry.credit %}fw-bold{% endif %}">
+                        {% if entry.credit %}{{ entry.credit }}{% else %}-{% endif %}
+                    </td>
+                    <td class="text-end font-monospace">{{ entry.balance }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">
+                        No transactions found for this period.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer text-muted">
+        <small>Showing transactions from {{ start_date }} to {{ end_date }}</small>
+    </div>
+</div>
+{% endblock %}

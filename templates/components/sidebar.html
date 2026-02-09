@@ -1,0 +1,48 @@
+<nav class="sidebar sidebar-dark">
+    <div class="sidebar-header">
+        <h2>ERP System</h2>
+    </div>
+    <ul class="sidebar-menu">
+        <li>
+            <a href="{% url 'dashboard' %}"
+                class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                Dashboard
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'customers:list' %}" class="{% if 'customers' in request.path %}active{% endif %}">
+                Customers
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'inventory:list' %}" class="{% if 'inventory' in request.path %}active{% endif %}">
+                Inventory
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'invoices:list' %}" class="{% if 'invoices' in request.path %}active{% endif %}">
+                Invoices
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'payments:list' %}" class="{% if 'payments' in request.path %}active{% endif %}">
+                Payments
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'banking:account_list' %}" class="{% if 'banking' in request.path %}active{% endif %}">
+                Banking
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'ledger:index' %}" class="{% if 'ledger' in request.path %}active{% endif %}">
+                Ledger
+            </a>
+        </li>
+        <li class="sidebar-footer">
+            <a href="{% url 'logout' %}">
+                Logout
+            </a>
+        </li>
+    </ul>
+</nav>

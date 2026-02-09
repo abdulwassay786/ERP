@@ -1,0 +1,23 @@
+<form method="post" action="{{ request.path }}">
+    {% csrf_token %}
+    <div class="modal-header">
+        <h3 class="modal-title">{% if form.instance.pk %}Edit Item Group{% else %}Add Item Group{% endif %}</h3>
+    </div>
+    <div class="modal-body">
+        {% for field in form %}
+        <div class="form-group mb-3">
+            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+            <div class="invalid-feedback d-block">
+                {{ field.errors.0 }}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    </div>
+</form>

@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Customers - ERP System{% endblock %}
+{% block page_title %}Customers{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <a href="{% url 'customers:create' %}" class="btn btn-primary" hx-get="{% url 'customers:create' %}"
+        hx-target="#modal-body" hx-swap="innerHTML">
+        + Add Customer
+    </a>
+</div>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Address</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="customer-table-body">
+        {% for customer in customers %}
+        <tr id="customer-row-{{ customer.id }}">
+            <td>{{ customer.name }}</td>
+            <td>{{ customer.phone|default:"-" }}</td>
+            <td>{{ customer.address|truncatewords:10|default:"-" }}</td>
+            <td class="table-actions">
+                <a href="{% url 'customers:detail' customer.id %}" class="btn btn-sm btn-info">View</a>
+                <a href="{% url 'customers:update' customer.id %}" class="btn btn-sm btn-secondary"
+                    hx-get="{% url 'customers:update' customer.id %}" hx-target="#modal-body" hx-swap="innerHTML">
+                    Edit
+                </a>
+                <form method="post" action="{% url 'customers:delete' customer.id %}" style="display: inline;"
+                    onsubmit="return confirm('Are you sure you want to delete this customer?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4" class="text-center text-muted">No customers found. Click "Add Customer" to create one.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if is_paginated %}
+<div class="pagination">
+    {% if page_obj.has_previous %}
+    <a href="?page=1">First</a>
+    <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+    {% endif %}
+
+    <span class="current">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}">Next</a>
+    <a href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

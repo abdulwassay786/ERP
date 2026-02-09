@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}Bank Transactions - ERP System{% endblock %}
+{% block page_title %}Bank Transactions{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <a href="{% url 'banking:transaction_create' %}" class="btn btn-primary"
+        hx-get="{% url 'banking:transaction_create' %}" hx-target="#modal-body" hx-swap="innerHTML">
+        + Add Transaction
+    </a>
+    <a href="{% url 'banking:account_list' %}" class="btn btn-secondary">View Accounts</a>
+    <a href="{% url 'banking:transaction_export_pdf' %}{% if request.GET.account %}?account={{ request.GET.account }}{% endif %}"
+        class="btn btn-info" target="_blank">
+        📄 Export PDF
+    </a>
+</div>
+
+{% if accounts %}
+<div class="mb-3">
+    <label>Filter by Account:</label>
+    <select class="form-control" style="max-width: 300px;" onchange="window.location.href='?account=' + this.value">
+        <option value="">All Accounts</option>
+        {% for account in accounts %}
+        <option value="{{ account.id }}" {% if request.GET.account|add:"0" == account.id %}selected{% endif %}>
+            {{ account.account_name }}
+        </option>
+        {% endfor %}
+    </select>
+</div>
+{% endif %}
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Account</th>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Description</th>
+            <th>Slip</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for transaction in transactions %}
+        <tr id="transaction-row-{{ transaction.id }}">
+            <td>{{ transaction.transaction_date }}</td>
+            <td>{{ transaction.bank_account.account_name }}</td>
+            <td>
+                {% if transaction.transaction_type == 'credit' %}
+                <span class="badge badge-success">Credit</span>
+                {% else %}
+                <span class="badge badge-danger">Debit</span>
+                {% endif %}
+            </td>
+            <td>Rs {{ transaction.amount }}</td>
+            <td>{{ transaction.description|truncatewords:10|default:"-" }}</td>
+            <td>
+                {% if transaction.slip_file %}
+                <a href="{{ transaction.slip_file.url }}" target="_blank" class="btn btn-sm btn-info">View</a>
+                {% else %}
+                -
+                {% endif %}
+            </td>
+            <td class="table-actions">
+                <a href="{% url 'banking:transaction_delete' transaction.id %}" class="btn btn-sm btn-danger delete-btn"
+                    hx-get="{% url 'banking:transaction_delete' transaction.id %}"
+                    hx-target="#transaction-row-{{ transaction.id }}" hx-swap="outerHTML"
+                    hx-confirm="Are you sure you want to delete this transaction?">
+                    Delete
+                </a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7" class="text-center text-muted">No transactions found. Click "Add Transaction" to create one.
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if is_paginated %}
+<div class="pagination">
+    {% if page_obj.has_previous %}
+    <a href="?page=1{% if request.GET.account %}&account={{ request.GET.account }}{% endif %}">First</a>
+    <a
+        href="?page={{ page_obj.previous_page_number }}{% if request.GET.account %}&account={{ request.GET.account }}{% endif %}">Previous</a>
+    {% endif %}
+
+    <span class="current">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+    {% if page_obj.has_next %}
+    <a
+        href="?page={{ page_obj.next_page_number }}{% if request.GET.account %}&account={{ request.GET.account }}{% endif %}">Next</a>
+    <a
+        href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.account %}&account={{ request.GET.account }}{% endif %}">Last</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

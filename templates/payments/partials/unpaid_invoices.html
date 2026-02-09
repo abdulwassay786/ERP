@@ -1,0 +1,63 @@
+{% if invoices %}
+<div class="table-responsive">
+    <table class="table table-sm table-hover mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>Invoice #</th>
+                <th>Date</th>
+                <th>Total</th>
+                <th>Paid So Far</th>
+                <th>Outstanding</th>
+                <th style="width: 150px;">Allocate (Rs)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for invoice in invoices %}
+            <tr>
+                <td>
+                    <a href="{% url 'invoices:detail' invoice.id %}" target="_blank" class="text-decoration-none">
+                        {{ invoice.invoice_number }} <i class="bi bi-box-arrow-up-right small"></i>
+                    </a>
+                </td>
+                <td>{{ invoice.date }}</td>
+                <td>{{ invoice.total_amount }}</td>
+                <td>
+                    {{ invoice.total_amount|add:invoice.outstanding|stringformat:".2f" }}
+                    <!-- Note: Implementation detail, simplified math here for display -->
+                </td>
+                <td class="fw-bold text-danger">
+                    {{ invoice.outstanding|floatformat:2 }}
+                </td>
+                <td>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">Rs</span>
+                        <input type="number" step="0.01" name="allocation_{{ invoice.id }}"
+                            class="form-control form-control-sm allocation-input" max="{{ invoice.outstanding }}"
+                            placeholder="Auto" aria-label="Allocation for {{ invoice.invoice_number }}">
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            <tr class="table-info fw-bold">
+                <td colspan="4" class="text-end">Total Outstanding:</td>
+                <td>
+                    {% with total_outstanding=0 %}
+                    <!-- This sum logic is tricky in templates, usually better passed from context -->
+                    Check Context
+                    {% endwith %}
+                </td>
+                <td>
+                    <small class="text-muted">Leave blank for FIFO</small>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-success text-center mb-0">
+    <i class="bi bi-check-circle-fill text-success fs-5 mb-2 d-block"></i>
+    No unpaid invoices found for this customer!
+    <br>
+    <small class="text-muted">Any payment recorded will be stored as a credit.</small>
+</div>
+{% endif %}

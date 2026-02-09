@@ -1,0 +1,32 @@
+{% extends request.base_template %}
+
+{% block content %}
+<h2>{% if object %}Edit Bank Account{% else %}Add Bank Account{% endif %}</h2>
+
+<form method="post" {% if object %} action="{% url 'banking:account_update' object.pk %}"
+    hx-post="{% url 'banking:account_update' object.pk %}" {% else %} action="{% url 'banking:account_create' %}"
+    hx-post="{% url 'banking:account_create' %}" {% endif %} hx-target="#modal-body" hx-swap="innerHTML">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-error mb-2">
+        {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+
+    {% for field in form %}
+    <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+        <div class="text-danger">{{ field.errors.0 }}</div>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    </div>
+</form>
+{% endblock %}

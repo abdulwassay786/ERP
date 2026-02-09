@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ customer.name }} - ERP System{% endblock %}
+{% block page_title %}Customer Details{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <a href="{% url 'customers:list' %}" class="btn btn-secondary">← Back to Customers</a>
+    <a href="{% url 'customers:update' customer.pk %}" class="btn btn-primary"
+        hx-get="{% url 'customers:update' customer.pk %}" hx-target="#modal-body" hx-swap="innerHTML">Edit Customer</a>
+</div>
+
+<!-- Customer Information Card -->
+<div class="content mb-3">
+    <h3>{{ customer.name }}</h3>
+    <div
+        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+        <div>
+            <p class="text-muted" style="margin-bottom: 0.25rem; font-size: 0.875rem;">Email</p>
+            <p style="margin: 0;">{{ customer.email|default:"—" }}</p>
+        </div>
+        <div>
+            <p class="text-muted" style="margin-bottom: 0.25rem; font-size: 0.875rem;">Phone</p>
+            <p style="margin: 0;">{{ customer.phone|default:"—" }}</p>
+        </div>
+        <div>
+            <p class="text-muted" style="margin-bottom: 0.25rem; font-size: 0.875rem;">Address</p>
+            <p style="margin: 0;">{{ customer.address|default:"—" }}</p>
+        </div>
+        <div>
+            <p class="text-muted" style="margin-bottom: 0.25rem; font-size: 0.875rem;">Customer Since</p>
+            <p style="margin: 0;">{{ customer.created_at|date:"M d, Y" }}</p>
+        </div>
+    </div>
+</div>
+
+<!-- Financial Summary -->
+<div class="dashboard-cards mb-3">
+    <div class="dashboard-card" style="border-left-color: #0284c7;">
+        <h3>Total Purchases</h3>
+        <div class="card-value">Rs {{ total_purchases|floatformat:2 }}</div>
+        <p class="text-muted" style="margin: 0; font-size: 0.875rem;">{{ invoice_count }} invoice{{invoice_count|pluralize }}</p>
+    </div>
+    <div class="dashboard-card" style="border-left-color: #16a34a;">
+        <h3>Total Paid</h3>
+        <div class="card-value" style="color: #16a34a;">Rs {{ total_paid|floatformat:2 }}</div>
+    </div>
+    <div class="dashboard-card" style="border-left-color: #dc2626;">
+        <h3>Pending Amount</h3>
+        <div class="card-value" style="color: #dc2626;">Rs {{ pending_amount|floatformat:2 }}</div>
+    </div>
+</div>
+
+<!-- Invoice History -->
+<div class="content">
+    <h3 style="margin-bottom: 1.5rem;">Invoice History</h3>
+
+    {% if invoices %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Invoice #</th>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for invoice in invoices %}
+            <tr>
+                <td><strong>{{ invoice.invoice_number }}</strong></td>
+                <td>{{ invoice.date|date:"M d, Y" }}</td>
+                <td>Rs {{ invoice.total_amount|floatformat:2 }}</td>
+                <td>
+                    {% if invoice.status == 'paid' %}
+                    <span class="badge badge-success">Paid</span>
+                    {% elif invoice.status == 'sent' %}
+                    <span class="badge badge-info">Sent</span>
+                    {% elif invoice.status == 'draft' %}
+                    <span class="badge badge-warning">Draft</span>
+                    {% elif invoice.status == 'cancelled' %}
+                    <span class="badge badge-danger">Cancelled</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'invoices:detail' invoice.pk %}" class="btn btn-sm btn-info">View</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-center text-muted" style="padding: 2rem 0;">No invoices found for this customer.</p>
+    {% endif %}
+</div>
+{% endblock %}

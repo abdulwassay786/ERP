@@ -1,0 +1,7 @@
+{% extends "ledger/statement_base.html" %}
+
+{% block title %}Customer Statement{% endblock %}
+{% block subtitle %}Statement of Account for {{ customer.name }}{% endblock %}
+
+{% block party_label %}Customer{% endblock %}
+{% block party_name %}{{ customer.name }}{% endblock %}

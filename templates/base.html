@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ERP System{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        {% if user.is_authenticated %}
+        {% include 'components/sidebar.html' %}
+        {% endif %}
+
+        <main class="main-content">
+            {% if user.is_authenticated %}
+            <header class="header">
+                <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+                <div class="user-info">
+                    <span>{{ user.username }}</span>
+                    {% if user.company %}
+                    <span class="company-badge">{{ user.company.name }}</span>
+                    {% endif %}
+                </div>
+            </header>
+            {% endif %}
+
+            <!-- Flash Messages -->
+            {% if messages %}
+            <div id="messages" class="messages">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                    <button class="close-btn" onclick="this.parentElement.remove()">×</button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Main Content -->
+            <div class="content">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Container for HTMX -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal()">×</span>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script src="{% static 'js/htmx-config.js' %}"></script>
+</body>
+
+</html>

@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}Record Payment - ERP System{% endblock %}
+{% block page_title %}Record Customer Payment{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px;">
+    <div class="card-header">
+        <h3>Record Payment</h3>
+        <p class="text-muted mb-0">Record a payment received from a customer</p>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-error mb-3">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <div class="form-group">
+                <label for="{{ form.invoice.id_for_label }}">{{ form.invoice.label }}</label>
+                {{ form.invoice }}
+                {% if form.invoice.help_text %}
+                <small class="form-text text-muted">{{ form.invoice.help_text }}</small>
+                {% endif %}
+                {% if form.invoice.errors %}
+                <div class="text-danger">{{ form.invoice.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.amount.id_for_label }}">{{ form.amount.label }}</label>
+                {{ form.amount }}
+                {% if form.amount.help_text %}
+                <small class="form-text text-muted">{{ form.amount.help_text }}</small>
+                {% endif %}
+                {% if form.amount.errors %}
+                <div class="text-danger">{{ form.amount.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.payment_date.id_for_label }}">{{ form.payment_date.label }}</label>
+                {{ form.payment_date }}
+                {% if form.payment_date.errors %}
+                <div class="text-danger">{{ form.payment_date.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
+                {{ form.notes }}
+                {% if form.notes.help_text %}
+                <small class="form-text text-muted">{{ form.notes.help_text }}</small>
+                {% endif %}
+                {% if form.notes.errors %}
+                <div class="text-danger">{{ form.notes.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-actions mt-4">
+                <button type="submit" class="btn btn-primary">Record Payment</button>
+                <a href="{% url 'invoices:list' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="alert alert-info mt-3" style="max-width: 600px;">
+    <strong>Note:</strong> Recording a payment will:
+    <ul class="mb-0 mt-2">
+        <li>Update the customer's ledger balance</li>
+        <li>Mark the invoice as "paid" if the full amount is received</li>
+        <li>Create a permanent record in the ledger system</li>
+    </ul>
+</div>
+{% endblock %}

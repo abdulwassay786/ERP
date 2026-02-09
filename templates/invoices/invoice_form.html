@@ -1,0 +1,321 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Edit Invoice{% else %}Create Invoice{% endif %} - ERP System{% endblock %}
+{% block page_title %}{% if object %}Edit Invoice{% else %}Create Invoice{% endif %}{% endblock %}
+
+{% block content %}
+<form method="post">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-error mb-2">
+        {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+        <div class="form-group">
+            <label for="{{ form.customer.id_for_label }}">{{ form.customer.label }}</label>
+            <div style="display: flex; gap: 0.5rem; align-items: start;">
+                {{ form.customer }}
+                <button type="button" class="btn btn-sm btn-secondary"
+                    onclick="document.getElementById('customer-creation-modal').style='display:flex; justify-content:center; align-items:center;'"
+                    hx-get="{% url 'customers:create' %}" hx-target="#customer-modal-body" hx-swap="innerHTML"
+                    style="white-space: nowrap; height: 38px;">
+                    + New
+                </button>
+            </div>
+            {% if form.customer.errors %}
+            <div class="text-danger">{{ form.customer.errors.0 }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.invoice_number.id_for_label }}">{{ form.invoice_number.label }}</label>
+            {{ form.invoice_number }}
+            {% if form.invoice_number.errors %}
+            <div class="text-danger">{{ form.invoice_number.errors.0 }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.date.id_for_label }}">{{ form.date.label }}</label>
+            {{ form.date }}
+            {% if form.date.errors %}
+            <div class="text-danger">{{ form.date.errors.0 }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.due_date.id_for_label }}">{{ form.due_date.label }}</label>
+            {{ form.due_date }}
+            {% if form.due_date.errors %}
+            <div class="text-danger">{{ form.due_date.errors.0 }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.status.id_for_label }}">{{ form.status.label }}</label>
+            {{ form.status }}
+            {% if form.status.errors %}
+            <div class="text-danger">{{ form.status.errors.0 }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
+            {{ form.notes }}
+            {% if form.notes.errors %}
+            <div class="text-danger">{{ form.notes.errors.0 }}</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Customer Creation Modal -->
+    <div id="customer-creation-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <!-- <h3>Quick Add Customer</h3> -->
+                <span class="close"
+                    onclick="document.getElementById('customer-creation-modal').style.display='none'">&times;</span>
+            </div>
+            <div id="customer-modal-body" class="modal-body">
+                <!-- Customer form will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <h3 class="mt-3">Invoice Items</h3>
+    {{ formset.management_form }}
+
+    <div id="invoice-items">
+        {% for form in formset %}
+        <div class="formset-row"
+            style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 1rem; margin-bottom: 1rem; align-items: end;">
+            {{ form.id }}
+            <div class="form-group">
+                <label>Product</label>
+                {{ form.product }}
+                {% if form.product.errors %}
+                <div class="text-danger">{{ form.product.errors.0 }}</div>
+                {% endif %}
+            </div>
+            <div class="form-group">
+                <label>Quantity</label>
+                {{ form.quantity }}
+                {% if form.quantity.errors %}
+                <div class="text-danger">{{ form.quantity.errors.0 }}</div>
+                {% endif %}
+            </div>
+            <div class="form-group">
+                <label>Unit Price</label>
+                {{ form.unit_price }}
+                {% if form.unit_price.errors %}
+                <div class="text-danger">{{ form.unit_price.errors.0 }}</div>
+                {% endif %}
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+                {{ form.DELETE }}
+                <button type="button" class="btn btn-danger btn-sm remove-item-btn" style="white-space: nowrap;">
+                    Remove
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3">
+        <button type="button" class="btn btn-secondary btn-sm" id="add-item-btn">
+            + Add Item
+        </button>
+    </div>
+
+    <div class="form-actions mt-3">
+        <button type="submit" class="btn btn-primary">Save Invoice</button>
+        <a href="{% url 'invoices:list' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const itemsContainer = document.getElementById('invoice-items');
+        const totalFormsInput = document.querySelector('input[name$="-TOTAL_FORMS"]');
+
+        // ========== HIDE DELETE CHECKBOXES ==========
+        // Hide all DELETE checkboxes (we use Remove buttons instead)
+        document.querySelectorAll('input[name$="-DELETE"]').forEach(function (checkbox) {
+            checkbox.style.display = 'none';
+        });
+
+        // ========== REMOVE ITEM BUTTON FUNCTIONALITY ==========
+        function attachRemoveListener(removeBtn) {
+            if (!removeBtn) return;
+
+            removeBtn.addEventListener('click', function () {
+                const row = this.closest('.formset-row');
+                if (!row) return;
+
+                // Get all rows
+                const allRows = itemsContainer.querySelectorAll('.formset-row');
+
+                // Don't allow removing if only one row left
+                if (allRows.length <= 1) {
+                    alert('At least one item is required.');
+                    return;
+                }
+
+                // Check if this is an existing item (has an ID field with value)
+                const idInput = row.querySelector('input[name$="-id"]');
+                const deleteCheckbox = row.querySelector('input[name$="-DELETE"]');
+
+                if (idInput && idInput.value) {
+                    // Existing item - mark for deletion by checking DELETE checkbox
+                    if (deleteCheckbox) {
+                        deleteCheckbox.checked = true;
+                    }
+                    // Hide the row instead of removing it
+                    row.style.display = 'none';
+                } else {
+                    // New item - just remove from DOM
+                    row.remove();
+
+                    // Update TOTAL_FORMS count
+                    if (totalFormsInput) {
+                        totalFormsInput.value = parseInt(totalFormsInput.value) - 1;
+                    }
+                }
+            });
+        }
+
+        // Attach remove listeners to all existing remove buttons
+        document.querySelectorAll('.remove-item-btn').forEach(attachRemoveListener);
+
+        // ========== ADD ITEM BUTTON FUNCTIONALITY ==========
+        const addItemBtn = document.getElementById('add-item-btn');
+
+        if (addItemBtn && itemsContainer && totalFormsInput) {
+            addItemBtn.addEventListener('click', function () {
+                // Get current total forms count
+                const currentFormCount = parseInt(totalFormsInput.value);
+
+                // Clone the first formset row as a template
+                const firstRow = itemsContainer.querySelector('.formset-row');
+                if (!firstRow) return;
+
+                const newRow = firstRow.cloneNode(true);
+
+                // Update all form field names and IDs with new index
+                const formRegex = new RegExp(`-\\d+-`, 'g');
+                const newIndex = currentFormCount;
+
+                // Update all inputs, selects, and labels in the cloned row
+                newRow.querySelectorAll('input, select, label').forEach(function (element) {
+                    // Update name attribute
+                    if (element.name) {
+                        element.name = element.name.replace(formRegex, `-${newIndex}-`);
+                    }
+
+                    // Update id attribute
+                    if (element.id) {
+                        element.id = element.id.replace(formRegex, `-${newIndex}-`);
+                    }
+
+                    // Update for attribute (for labels)
+                    if (element.htmlFor) {
+                        element.htmlFor = element.htmlFor.replace(formRegex, `-${newIndex}-`);
+                    }
+
+                    // Clear values for inputs (except hidden fields)
+                    if (element.tagName === 'INPUT' && element.type !== 'hidden') {
+                        element.value = '';
+                    }
+
+                    // Reset select to first option
+                    if (element.tagName === 'SELECT') {
+                        element.selectedIndex = 0;
+                    }
+
+                    // Uncheck DELETE checkbox if present
+                    if (element.type === 'checkbox' && element.name.includes('DELETE')) {
+                        element.checked = false;
+                    }
+                });
+
+                // Clear any error messages
+                newRow.querySelectorAll('.text-danger').forEach(function (errorDiv) {
+                    errorDiv.remove();
+                });
+
+                // Append the new row
+                itemsContainer.appendChild(newRow);
+
+                // Update TOTAL_FORMS count
+                totalFormsInput.value = currentFormCount + 1;
+
+                // Attach product price listener to the new row
+                const newProductSelect = newRow.querySelector('select[name$="-product"]');
+                if (newProductSelect) {
+                    attachProductListener(newProductSelect);
+                }
+
+                // Attach remove listener to the new row's remove button
+                const newRemoveBtn = newRow.querySelector('.remove-item-btn');
+                if (newRemoveBtn) {
+                    attachRemoveListener(newRemoveBtn);
+                }
+            });
+        }
+
+        // ========== AUTO-FETCH PRODUCT PRICE FUNCTIONALITY ==========
+        // Function to attach change listener to a product select
+        function attachProductListener(productSelect) {
+            if (!productSelect) return;
+
+            productSelect.addEventListener('change', function () {
+                const productId = this.value;
+                if (!productId) return;
+
+                // Find the corresponding unit_price field
+                const row = this.closest('.formset-row');
+                if (!row) return;
+
+                const priceInput = row.querySelector('input[name$="-unit_price"]');
+                if (!priceInput) return;
+
+                // Fetch product price from API
+                fetch(`/inventory/api/product/${productId}/price/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            priceInput.value = data.unit_price;
+                        } else {
+                            console.error('Failed to fetch product price:', data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching product price:', error);
+                    });
+            });
+        }
+
+        // Attach listeners to all existing product selects
+        document.querySelectorAll('select[name$="-product"]').forEach(attachProductListener);
+
+        // MutationObserver for dynamically added rows (backup mechanism)
+        const observer = new MutationObserver(function (mutations) {
+            mutations.forEach(function (mutation) {
+                mutation.addedNodes.forEach(function (node) {
+                    if (node.nodeType === 1 && node.classList && node.classList.contains('formset-row')) {
+                        const productSelect = node.querySelector('select[name$="-product"]');
+                        attachProductListener(productSelect);
+                    }
+                });
+            });
+        });
+
+        if (itemsContainer) {
+            observer.observe(itemsContainer, { childList: true, subtree: true });
+        }
+    });
+</script>
+{% endblock %}

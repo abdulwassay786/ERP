@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}Bank Accounts - ERP System{% endblock %}
+{% block page_title %}Bank Accounts{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <!-- <a href="{% url 'banking:account_create' %}" class="btn btn-primary" hx-get="{% url 'banking:account_create' %}"
+        hx-target="#modal-body" hx-swap="innerHTML">
+        + Add Bank Account
+    </a> -->
+    <a href="{% url 'banking:account_create' %}" class="btn btn-primary">
+        + Add Bank Account
+    </a>
+    <a href="{% url 'banking:transaction_list' %}" class="btn btn-secondary">View Transactions</a>
+</div>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Account Name</th>
+            <th>Account Number</th>
+            <th>Bank Name</th>
+            <th>Balance</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for account in accounts %}
+        <tr id="account-row-{{ account.id }}">
+            <td><strong>{{ account.account_name }}</strong></td>
+            <td>{{ account.account_number }}</td>
+            <td>{{ account.bank_name }}</td>
+            <td>Rs {{ account.balance }}</td>
+            <td class="table-actions">
+                <a href="{% url 'banking:transaction_list' %}?account={{ account.id }}"
+                    class="btn btn-sm btn-primary">Transactions</a>
+                <a href="{% url 'banking:account_update' account.id %}" class="btn btn-sm btn-secondary"
+                    hx-get="{% url 'banking:account_update' account.id %}" hx-target="#modal-body" hx-swap="innerHTML">
+                    Edit
+                </a>
+                <button class="btn btn-sm btn-danger delete-btn" hx-post="{% url 'banking:account_delete' account.id %}"
+                    hx-target="#account-row-{{ account.id }}" hx-swap="outerHTML"
+                    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+                    Delete
+                </button>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5" class="text-center text-muted">No bank accounts found. Click "Add Bank Account" to create
+                one.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if is_paginated %}
+<div class="pagination">
+    {% if page_obj.has_previous %}
+    <a href="?page=1">First</a>
+    <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+    {% endif %}
+
+    <span class="current">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}">Next</a>
+    <a href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
